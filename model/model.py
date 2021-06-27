@@ -3,12 +3,14 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
 from torchvision.utils import save_image
+from torch.utils.tensorboard import SummaryWriter
+
 import numpy as np
 from model.loss import StyleLoss, ContentLoss
 
 import os
 from tqdm import tqdm
-
+import pathlib
 
 class StyleTransfer(nn.Module) :
 
@@ -38,15 +40,19 @@ class StyleTransfer(nn.Module) :
 
 class Optimization(nn.Module) :
 
-    def __init__(self, params):
+    def __init__(self, params, experiment):
         super(Optimization, self).__init__()
 
         self.style_model = StyleTransfer()
         self.params = params
+        self.experiment = experiment
         self.contentCriterion = ContentLoss(params.content_weight)
+        self.tb_writer_loss = SummaryWriter(f"logs/{self.experiment}/")
     
     def train(self, model, n_epochs, lr, original_img, style_img, generated_img):
         
+        path_saving = pathlib.Path(self.params.transformed_img_path)
+        path_saving.mkdir(parents=True, exist_ok=True)
 
         optimizer = optim.Adam([generated_img], lr=lr)
 
@@ -85,7 +91,21 @@ class Optimization(nn.Module) :
             optimizer.step()
 
             if step % self.params.save_image == 0 :
-                path_save_img = os.path.join(self.params.transformed_img_path, "gen_"+str(step)+".png")
+                path_save_img = os.path.join(str(path_saving), "gen_"+str(step)+".png")
                 print(f'Step [{step}/{n_epochs}] saving image in : {path_save_img}')
 
                 save_image(generated_img, path_save_img)
+                self.write_logs_tb(self.tb_writer_loss, loss, step)
+
+        path_save_img = os.path.join(str(path_saving), "gen_"+str(step)+".png")
+        print(f'Step [{step}/{n_epochs}] saving image in : {path_save_img}')
+
+        save_image(generated_img, path_save_img)
+
+    def write_logs_tb(self, tb_writer_loss, loss, step):    
+
+        # Adding loss values to tb
+        tb_writer_loss.add_scalar(
+            "loss", loss, global_step=step
+        )
+

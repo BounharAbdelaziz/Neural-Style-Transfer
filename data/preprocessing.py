@@ -5,9 +5,9 @@ from PIL import Image
 class Preprocessing(nn.Module):
     def __init__(self, w, h):
         super(Preprocessing, self).__init__()
-        assert (w == h), "[Preprocessing-init] Width and Height should be the same !"
+        # assert (w == h), "[Preprocessing-init] Width and Height should be the same !"
         self.transforms = transforms.Compose([
-            transforms.Resize((w, h)),
+            transforms.Resize((h, w)),
             transforms.ToTensor(),
         ])
     

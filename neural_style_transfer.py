@@ -7,20 +7,23 @@ from model.parameters import Parameters
 from model.model import StyleTransfer, Optimization
 from data.preprocessing import Preprocessing
 
-def run_optimization(params, model, original_img_path, style_img_path, w=128, h=128):
+def run_optimization(params, model, original_img_path, style_img_path, w=128, h=128, experiment_name="experiment"):
     # preprocess images
     preprocessing = Preprocessing(w, h)
     original_img = preprocessing.process_img(original_img_path)
     style_img = preprocessing.process_img(style_img_path)
+
+    print(f'original_img.shape : {original_img.shape}')
+    print(f'style_img.shape : {style_img.shape}')
     
     generated_img = original_img.clone().requires_grad_(True).to(params.device)
 
-    optimization = Optimization(params)
+    optimization = Optimization(params, experiment=experiment_name)
     # start optimization
     optimization.train(model, params.n_epochs, params.lr, original_img, style_img, generated_img)
 
 if __name__ == "__main__" :
-
+# python neural_style_transfer.py --save_image 25 --n_epochs 7000 --transformed_img_path ./images/transformed/abdel/style_3 --org_img_path ./images/originals/enfance.jpg --style_img_path ./images/styles/style_3.png
     parser = argparse.ArgumentParser()
 
     # Parameters
@@ -30,6 +33,8 @@ if __name__ == "__main__" :
     parser.add_argument("--content_weight", type=float, default=1, help="Weight of the content in the loss function.")
     parser.add_argument("--style_weight", type=float, default=0.2, help="Weight of the style in the loss function.")
     parser.add_argument("--save_image", type=int, default=100, help="Number of iterations before saving an image.")
+    parser.add_argument("--w", type=int, default=320, help="Width of the image.")
+    parser.add_argument("--h", type=int, default=210, help="Height of the image.")
     
     # Paths and exp name
     parser.add_argument("--org_img_path", type=str, default='./images/originals/lion.jpg', help="Path to the original image.")
@@ -52,9 +57,11 @@ if __name__ == "__main__" :
     print("org_img_path : ",args.org_img_path)
     print("style_img_path : ",args.style_img_path)
     print("experiment_name : ",args.experiment_name)
+    print("Width : ",args.w)
+    print("Height : ",args.h)
     
     # Init style transfer model
     StyleTransfer = StyleTransfer()
 
     # start the optimization process
-    run_optimization(params, StyleTransfer, original_img_path=params.org_img_path, style_img_path=params.style_img_path,  w=256, h=256)
+    run_optimization(params, StyleTransfer, original_img_path=params.org_img_path, style_img_path=params.style_img_path,  w=args.w, h=args.h, experiment_name=args.experiment_name)
